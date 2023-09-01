@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>notes-app</title>
+    <link rel="stylesheet" href="modern-normalize.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+
+    <h1 class="dropdown" id="dropdown">Selected</h1>
+
+
+    <header>
+      <h1 class="header-title">text-notes-app</h1> 
+    </header>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="container">
+      <div class="notes-grid" id="notesGrid">
+        <!-- from js class=note-card -->
+      </div>
+
+      <div id="sidebar">
+        <button class="btn btn-del" id="delNoteBtn">-</button>
+        <button class="btn btn-add" id="addNoteBtn">+</button>
+      </div>
+  
+    </div>
+
+    <div class="modal" id="noteModal">
+      <form class="note-form" id="noteForm">
+        <input class="input" type="text" id="title" placeholder="Title" required="" maxlength="100">
+        <textarea class="input" id="content" placeholder="Content"></textarea>
+      </form>
+    </div>
+    
+
+    <footer>
+      Made by Dawid Grden
+    </footer>
+      <script src="app.js"></script>
+  </body>
+</html>
