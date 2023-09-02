@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+
     <title>notes-app</title>
     <link rel="stylesheet" href="modern-normalize.css" />
     <link rel="stylesheet" href="style.css" />
@@ -26,7 +27,7 @@
 
       <div id="sidebar">
         <button class="btn btn-del" id="delNoteBtn">-</button>
-        <button class="btn btn-add" id="addNoteBtn">+</button>
+        <button class="btn btn-add active" id="addNoteBtn">+</button>
       </div>
   
     </div>
@@ -36,6 +37,9 @@
         <input class="input" type="text" id="title" placeholder="Title" required="" maxlength="100">
         <textarea class="input" id="content" placeholder="Content"></textarea>
       </form>
+      <button class="btn-form-del" id="btnFormDel">
+        <img src="icons/trash-delete.png" alt="delete-form">
+      </button>
     </div>
     
 

@@ -42,6 +42,7 @@
   background: #555; 
 }
 html {
+  touch-action: manipulation;
   font-size: 16px;
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -128,6 +129,7 @@ footer{
 
 /*Buttons*/
 .btn {
+  align-self: center;
   display: inline-block;
   outline: 0;
   text-align: center;
@@ -140,27 +142,44 @@ footer{
 
   font-weight: 800;
   line-height: 30px;
-  transition: background,color .1s ease-in-out;
+
+  opacity: 0;
+  transition: background,color .1s ease-in-out, visibility 0.3s linear,opacity 0.3s linear;
 
 
   width: 80%;
   aspect-ratio : 1 / 1;
   
   background-color: var(--clr-m-1);
+
+  visibility: hidden;
+
+
 }
 .btn:hover {
   background-color: aliceblue;
   color: #000;
 }
-
-#delNoteBtn{
-  align-self: center;
-
+.btn.active{
+  opacity: 1;
+  visibility: visible;
+  
 }
-#addNoteBtn{
 
-  align-self: center;
 
+#btnFormDel{
+  align-self: flex-start;
+  height: 30px;
+  width: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background-color: var(--clr-m-3);
+}
+#btnFormDel>img{
+  width: 100%;
+  filter: invert(70%);
 }
 
 
@@ -226,7 +245,8 @@ footer{
   flex-wrap: wrap;
   flex-direction: row;
   flex: 1;
-  align-items: flex-start; 
+
+  align-content: flex-start;
 }
 
 /*note card*/
@@ -268,45 +288,6 @@ footer{
 }
 
 
-/*
-MASONRY TEST
-*/
-/* 
-* {
-  margin: 0;
-}
-
-.grid--masonry {
-  display: grid;
-  justify-content: center;
-  grid-gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, min(15em, 100%));
-  padding: 0.75rem;
-  min-height: 100vh;
-  background: #555;
-}
-.grid--masonry > * {
-  align-self: start;
-}
-.grid--masonry > *:first-child {
-  grid-column: 1/-1;
-}
-.grid--masonry > *:first-child img {
-  max-height: 31vh;
-}
-.grid--masonry > * img {
-  display: block;
-  width: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
-  filter: sepia(1);
-}
-@supports (grid-template-rows: masonry) {
-  .grid--masonry {
-    grid-template-rows: masonry;
-  }
-} */
 
 
 /* Media query for screens less than 400px */
@@ -314,7 +295,7 @@ MASONRY TEST
   .note-card {
     margin: 5px;
     width: calc(50% - 10px);
-    height: 15vh
+    height: 14vh
   }
 }
 
@@ -329,9 +310,7 @@ MASONRY TEST
 
 /* Media query for screens 1200px and above */
 @media (min-width: 1200px) {
-  .notes-grid {
-    align-content: flex-start;
-  }
+
   .note-card {
     margin: 20px;
     width: calc(20% - 40px);
