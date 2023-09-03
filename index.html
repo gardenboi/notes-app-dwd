@@ -1,51 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
 
-    <title>notes-app</title>
-    <link rel="stylesheet" href="modern-normalize.css" />
-    <link rel="stylesheet" href="style.css" />
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
 
-  <body>
+  <title>notes-app</title>
+  <link rel="stylesheet" href="modern-normalize.css" />
+  <link rel="stylesheet" href="style.css" />
 
-    <h1 class="dropdown" id="dropdown">Selected</h1>
+  <script src="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js" defer></script>
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
+</head>
+
+<body>
+
+  <h1 class="dropdown" id="dropdown">Selected</h1>
 
 
-    <header>
-      <h1 class="header-title">text-notes-app</h1> 
-    </header>
+  <header>
+    <h1 class="header-title">text-notes-app</h1>
 
-    <div class="overlay" id="overlay"></div>
-
-    <div class="container">
-      <div class="notes-grid" id="notesGrid">
-        <!-- from js class=note-card -->
+    <nav>
+      <div class="lds-dual-ring active" id="loadingRing"></div>
+      <div class="logged-out" id="loggedOut">
+        <button class="btn" id="logInBtn">Log in</button>
       </div>
-
-      <div id="sidebar">
-        <button class="btn btn-del" id="delNoteBtn">-</button>
-        <button class="btn btn-add active" id="addNoteBtn">+</button>
+      <div class="logged-in" id="loggedIn">
+        <button class="btn" id="accountBtn">Account</button>
+        <button class="btn" id="logOutBtn">Log out</button>
       </div>
-  
+    </nav>
+  </header>
+
+  <div class="overlay" id="overlay"></div>
+
+  <div class="container">
+    <div class="notes-grid" id="notesGrid">
+      <!-- from js class=note-card -->
     </div>
 
-    <div class="modal" id="noteModal">
-      <form class="note-form" id="noteForm">
-        <input class="input" type="text" id="title" placeholder="Title" required="" maxlength="100">
-        <textarea class="input" id="content" placeholder="Content"></textarea>
-      </form>
-      <button class="btn-form-del" id="btnFormDel">
-        <img src="icons/trash-delete.png" alt="delete-form">
-      </button>
+    <div id="sidebar">
+      <button class="btn btn-del" id="delNoteBtn">-</button>
+      <button class="btn btn-add active" id="addNoteBtn">+</button>
     </div>
-    
 
-    <footer>
-      Made by Dawid Grden
-    </footer>
-      <script src="app.js"></script>
-  </body>
+  </div>
+
+  <div class="modal" id="noteModal">
+    <form class="note-form" id="noteForm">
+      <input class="input" type="text" id="title" placeholder="Title" required="" maxlength="100">
+      <textarea class="input" id="content" placeholder="Content"></textarea>
+    </form>
+    <button class="btn-form-del" id="btnFormDel">
+      <img src="icons/trash-delete.png" alt="delete-form">
+    </button>
+  </div>
+
+
+  <footer>
+    Made by Dawid Grden
+  </footer>
+
+
+
+  <script type="module" src="app.js"></script>
+</body>
+
 </html>

@@ -1,4 +1,24 @@
 "use strict";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithPopup,
+} from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
+import {} from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDDpKPe_f_QJKvCx9CmJCIifCEXq8-y7yY",
+  authDomain: "notes-app-b661f.firebaseapp.com",
+  projectId: "notes-app-b661f",
+  storageBucket: "notes-app-b661f.appspot.com",
+  messagingSenderId: "166018201908",
+  appId: "1:166018201908:web:87e5cd77f0406a9673cd61",
+};
 
 //    _    _ _    _ _____ _____
 //   | |  | | |  | |_   _|  __ \
@@ -86,7 +106,7 @@ class NotesLibrary {
 //
 //
 
-var supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
 
 let currentNoteId = 0;
 let currentNoteIdMultiselection = [];
@@ -102,6 +122,9 @@ const noteModalTitle = document.getElementById("title");
 const noteModalContent = document.getElementById("content");
 const notesGrid = document.getElementById("notesGrid");
 const dropdown = document.getElementById("dropdown");
+const logInBtn = document.getElementById("logInBtn");
+const logOutBtn = document.getElementById("logOutBtn");
+const accountBtn = document.getElementById("accountBtn");
 
 const multiSelectionMode = {
   value: false,
@@ -151,50 +174,44 @@ const addNote = () => {
   currentNoteId = currentNote.id;
   notesLibrary.addNote(currentNote);
 
-  const addedNoteCard = createNoteCard(currentNote) 
-  
+  const addedNoteCard = createNoteCard(currentNote);
+
   openNoteModalForm(currentNoteId);
   saveToLocalStorage(currentNoteId);
 
-  addedNoteCard.style.transform = 'scale(0)';
-  addedNoteCard.style.opacity = '0';
+  addedNoteCard.style.transform = "scale(0)";
+  addedNoteCard.style.opacity = "0";
 
-    // Use setTimeout to apply the transition after the reflow
-    setTimeout(() => {
-      addedNoteCard.style.transform = 'scale(1)';
-      addedNoteCard.style.opacity = '1';
+  // Use setTimeout to apply the transition after the reflow
+  setTimeout(() => {
+    addedNoteCard.style.transform = "scale(1)";
+    addedNoteCard.style.opacity = "1";
   }, 0);
 };
 addNoteBtn.onclick = addNote;
 
 const delNote = (id) => {
   const cardToRemove = document.querySelector(`[data-card-id="${id}"]`);
-  
-  if (cardToRemove) {
-    // Apply the "removing" class to trigger the transition
-    cardToRemove.classList.add('removing');
-    
-    // Remove the element from the DOM after the transition
-    cardToRemove.addEventListener('transitionend', () => {
-      const cardContainer = cardToRemove.parentNode; //parent
-      if (cardContainer) {
-        cardContainer.removeChild(cardToRemove);
-      }
-      notesLibrary.removeNote(id);
-      saveLocal();
 
-    });
-  }
+  const removeCard = () => {
+    cardToRemove.remove();
+  };
+
+  cardToRemove.classList.add("removing");
+  cardToRemove.addEventListener("transitionend", removeCard);
+
+  notesLibrary.removeNote(id);
+  saveLocal();
   closeAllModals();
 };
-delFormBtn.onclick = () => delNote(currentNoteId)
+delFormBtn.onclick = () => delNote(currentNoteId);
 
 const delMutlipleNotes = () => {
-  currentNoteIdMultiselection.forEach(id => {
-    delNote(id)
+  currentNoteIdMultiselection.forEach((id) => {
+    delNote(id);
   });
-}
-delNotesBtn.onclick = delMutlipleNotes
+};
+delNotesBtn.onclick = delMutlipleNotes;
 
 //    _      ____   _____          _           _____ _______ ____  _____            _____ ______
 //   | |    / __ \ / ____|   /\   | |         / ____|__   __/ __ \|  __ \     /\   / ____|  ____|
@@ -249,8 +266,6 @@ const saveLocal = () => {
   localStorage.setItem("library", JSON.stringify(notesLibrary.notes));
 };
 
-
-
 //    _____  ______ ____   ____  _    _ _   _  _____ ______     _____ _   _ _____  _    _ _______
 //   |  __ \|  ____|  _ \ / __ \| |  | | \ | |/ ____|  ____|   |_   _| \ | |  __ \| |  | |__   __|
 //   | |  | | |__  | |_) | |  | | |  | |  \| | |    | |__        | | |  \| | |__) | |  | |  | |
@@ -277,16 +292,17 @@ function saveToLocalStorage(id) {
 
   notesLibrary.updateNoteContent(id, title, content);
 
-  const fieldsToRender = document.querySelector(`[data-card-id="${currentNoteId}"]`);
+  const fieldsToRender = document.querySelector(
+    `[data-card-id="${currentNoteId}"]`
+  );
 
-  const titleField = fieldsToRender.querySelector('.card-title')
-  const contentField = fieldsToRender.querySelector('.card-content')
+  const titleField = fieldsToRender.querySelector(".card-title");
+  const contentField = fieldsToRender.querySelector(".card-content");
 
-  titleField.textContent = title
-  contentField.textContent = content
+  titleField.textContent = title;
+  contentField.textContent = content;
 
   saveLocal();
-  
 }
 
 // Debounced version of the saveToLocalStorage function
@@ -303,7 +319,6 @@ contentInput.addEventListener("input", () =>
   debouncedSaveToLocalStorage(currentNoteId)
 );
 
-
 function removeSelectedClassNoteCard() {
   currentNoteId = null;
   addNoteBtn.classList.add("active");
@@ -314,14 +329,14 @@ function removeSelectedClassNoteCard() {
   });
 }
 
-//     _____ _______    _______ ______  
-//    / ____|__   __|/\|__   __|  ____| 
-//   | (___    | |  /  \  | |  | |__    
-//    \___ \   | | / /\ \ | |  |  __|   
-//    ____) |  | |/ ____ \| |  | |____  
-//   |_____/   |_/_/    \_\_|  |______| 
-//                                      
-//                                      
+//     _____ _______    _______ ______
+//    / ____|__   __|/\|__   __|  ____|
+//   | (___    | |  /  \  | |  | |__
+//    \___ \   | | / /\ \ | |  |  __|
+//    ____) |  | |/ ____ \| |  | |____
+//   |_____/   |_/_/    \_\_|  |______|
+//
+//
 
 document.addEventListener("multiselectionStateChange", (event) => {
   if (event.detail === true) {
@@ -332,7 +347,7 @@ document.addEventListener("multiselectionStateChange", (event) => {
     dropdown.classList.remove("selected");
     addNoteBtn.classList.add("active");
     delNotesBtn.classList.remove("active");
-    currentNoteIdMultiselection = []
+    currentNoteIdMultiselection = [];
   }
 });
 
@@ -344,7 +359,6 @@ document.addEventListener("multiselectionStateChange", (event) => {
 //   |_| \_|\____/  |_|  |______|    \_____/_/    \_\_|  \_\_____/
 //
 //
-
 
 const createNoteCard = (note) => {
   const noteCard = document.createElement("div");
@@ -381,18 +395,17 @@ const createNoteCard = (note) => {
     cancelable: true,
     bubbles: true,
   });
-  
+
   noteCard.dispatchEvent(touchEventStart);
   noteCard.dispatchEvent(touchEventEnd);
 
-
   function startPress() {
-    if (multiSelectionMode.get() === false){
-       mousePressTimer = setTimeout(() => {
-      multiSelectionMode.set(true);
-    }, 1000);
+    if (multiSelectionMode.get() === false) {
+      mousePressTimer = setTimeout(() => {
+        multiSelectionMode.set(true);
+      }, 1000);
     }
-   
+
     isMousePressed = true;
   }
 
@@ -427,21 +440,21 @@ const createNoteCard = (note) => {
   }
 
   if (supportsTouch) {
-      noteCard.addEventListener("touchstart", (e) =>{
-        e.preventDefault()
-    startPress();
-  })
-  noteCard.addEventListener("touchend", (e) =>{
-    e.preventDefault()
-    endPress();
-  })
-  }else{
-     noteCard.addEventListener("mousedown", () => {
-    startPress();
-  });
-  noteCard.addEventListener("mouseup", () => {
-    endPress();
-  });
+    noteCard.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      startPress();
+    });
+    noteCard.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      endPress();
+    });
+  } else {
+    noteCard.addEventListener("mousedown", () => {
+      startPress();
+    });
+    noteCard.addEventListener("mouseup", () => {
+      endPress();
+    });
   }
 
   noteCard.appendChild(title);
@@ -449,7 +462,7 @@ const createNoteCard = (note) => {
 
   notesGrid.appendChild(noteCard);
 
-  return noteCard
+  return noteCard;
 };
 
 const resetNotesGrid = () => {
@@ -462,8 +475,6 @@ function renderAllNotesLibrary() {
     createNoteCard(note);
   });
 }
-
-
 
 //    _____        _____ ______     _      ____          _____
 //   |  __ \ /\   / ____|  ____|   | |    / __ \   /\   |  __ \
@@ -483,7 +494,6 @@ const JSONToNote = (note) => {
     note.dateOfModification
   );
 };
-
 
 window.addEventListener("load", () => {
   const savedNotesLibrary = JSON.parse(localStorage.getItem("library"));
@@ -519,7 +529,41 @@ document.addEventListener("click", function (event) {
   }
 });
 
-
 window.addEventListener("contextmenu", (e) => {
   e.preventDefault();
 });
+
+//    ______ _____ _____  ______ ____           _____ ______
+//   |  ____|_   _|  __ \|  ____|  _ \   /\    / ____|  ____|
+//   | |__    | | | |__) | |__  | |_) | /  \  | (___ | |__
+//   |  __|   | | |  _  /|  __| |  _ < / /\ \  \___ \|  __|
+//   | |     _| |_| | \ \| |____| |_) / ____ \ ____) | |____
+//   |_|    |_____|_|  \_\______|____/_/    \_\_____/|______|
+//
+//
+const app = initializeApp(firebaseConfig);
+const provider = new GoogleAuthProvider();
+const auth = getAuth();
+
+const signIn = () =>
+  signInWithPopup(auth, provider)
+    .then((result) => {
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential.accessToken;
+      // The signed-in user info.
+      const user = result.user;
+      // IdP data available using getAdditionalUserInfo(result)
+      // ...
+    })
+    .catch((error) => {
+      // Handle Errors here.
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      // The email of the user's account used.
+      const email = error.customData.email;
+      // The AuthCredential type that was used.
+      const credential = GoogleAuthProvider.credentialFromError(error);
+      // ...
+    });
+logInBtn.onclick = signIn;
