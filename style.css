@@ -245,7 +245,7 @@ footer{
   flex-wrap: wrap;
   flex-direction: row;
   flex: 1;
-
+  transition: flex-direction 1s;
   align-content: flex-start;
 }
 
@@ -263,6 +263,29 @@ footer{
   margin-bottom: 10px;
 
   box-sizing: border-box;
+  opacity: 1;
+  transition: all 0.5s ease-in;
+  transform: scale(1) translate(0, 0); /* Initial position with no translation */
+  transform-origin: left; /* Set the transform origin to the center */
+}
+
+/* Define a custom animation for shrinking */
+@keyframes shrinkAnimation {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.note-card.removing {
+  width: 0;
+  padding: 0;
+  margin: 0;
+  animation: shrinkAnimation 1s ease-in-out forwards;
 }
 .note-card:hover{
   border-color: #555555;
@@ -281,7 +304,6 @@ footer{
 .card-content {
   font-size: 0.7rem;
   line-height: 1.5;
-
   white-space: pre;
   overflow: hidden;
   text-overflow: ellipsis;

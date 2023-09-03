@@ -1,3 +1,5 @@
+"use strict";
+
 //    _    _ _    _ _____ _____
 //   | |  | | |  | |_   _|  __ \
 //   | |  | | |  | | | | | |  | |
@@ -26,8 +28,8 @@ function getRandomNumbers() {
 class Note {
   constructor(
     id = null,
-    title = "Unknown",
-    content = "Nothing",
+    title = "",
+    content = "",
     dateOfCreation = null,
     dateOfModification = null
   ) {
@@ -92,7 +94,8 @@ let currentNoteIdMultiselection = [];
 const notesLibrary = new NotesLibrary();
 
 const addNoteBtn = document.getElementById("addNoteBtn");
-const delNoteBtn = document.getElementById("delNoteBtn");
+const delNotesBtn = document.getElementById("delNoteBtn");
+const delFormBtn = document.getElementById("btnFormDel");
 const overlay = document.getElementById("overlay");
 const showNoteModal = document.getElementById("noteModal");
 const noteModalTitle = document.getElementById("title");
@@ -143,15 +146,55 @@ overlay.onclick = closeAllModals;
 
 const addNote = () => {
   const currentNote = new Note();
-  currentNote.initialise();
 
+  currentNote.initialise();
   currentNoteId = currentNote.id;
   notesLibrary.addNote(currentNote);
 
+  const addedNoteCard = createNoteCard(currentNote) 
+  
   openNoteModalForm(currentNoteId);
   saveToLocalStorage(currentNoteId);
+
+  addedNoteCard.style.transform = 'scale(0)';
+  addedNoteCard.style.opacity = '0';
+
+    // Use setTimeout to apply the transition after the reflow
+    setTimeout(() => {
+      addedNoteCard.style.transform = 'scale(1)';
+      addedNoteCard.style.opacity = '1';
+  }, 0);
 };
 addNoteBtn.onclick = addNote;
+
+const delNote = (id) => {
+  const cardToRemove = document.querySelector(`[data-card-id="${id}"]`);
+  
+  if (cardToRemove) {
+    // Apply the "removing" class to trigger the transition
+    cardToRemove.classList.add('removing');
+    
+    // Remove the element from the DOM after the transition
+    cardToRemove.addEventListener('transitionend', () => {
+      const cardContainer = cardToRemove.parentNode; //parent
+      if (cardContainer) {
+        cardContainer.removeChild(cardToRemove);
+      }
+      notesLibrary.removeNote(id);
+      saveLocal();
+
+    });
+  }
+  closeAllModals();
+};
+delFormBtn.onclick = () => delNote(currentNoteId)
+
+const delMutlipleNotes = () => {
+  currentNoteIdMultiselection.forEach(id => {
+    delNote(id)
+  });
+}
+delNotesBtn.onclick = delMutlipleNotes
 
 //    _      ____   _____          _           _____ _______ ____  _____            _____ ______
 //   | |    / __ \ / ____|   /\   | |         / ____|__   __/ __ \|  __ \     /\   / ____|  ____|
@@ -206,6 +249,8 @@ const saveLocal = () => {
   localStorage.setItem("library", JSON.stringify(notesLibrary.notes));
 };
 
+
+
 //    _____  ______ ____   ____  _    _ _   _  _____ ______     _____ _   _ _____  _    _ _______
 //   |  __ \|  ____|  _ \ / __ \| |  | | \ | |/ ____|  ____|   |_   _| \ | |  __ \| |  | |__   __|
 //   | |  | | |__  | |_) | |  | | |  | |  \| | |    | |__        | | |  \| | |__) | |  | |  | |
@@ -232,8 +277,16 @@ function saveToLocalStorage(id) {
 
   notesLibrary.updateNoteContent(id, title, content);
 
+  const fieldsToRender = document.querySelector(`[data-card-id="${currentNoteId}"]`);
+
+  const titleField = fieldsToRender.querySelector('.card-title')
+  const contentField = fieldsToRender.querySelector('.card-content')
+
+  titleField.textContent = title
+  contentField.textContent = content
+
   saveLocal();
-  renderNotesLibrary();
+  
 }
 
 // Debounced version of the saveToLocalStorage function
@@ -250,35 +303,36 @@ contentInput.addEventListener("input", () =>
   debouncedSaveToLocalStorage(currentNoteId)
 );
 
-const JSONToNote = (note) => {
-  return new Note(
-    note.id,
-    note.title,
-    note.content,
-    note.dateOfCreation,
-    note.dateOfModification
-  );
-};
 
 function removeSelectedClassNoteCard() {
   currentNoteId = null;
   addNoteBtn.classList.add("active");
-  delNoteBtn.classList.remove("active");
+  delNotesBtn.classList.remove("active");
   const childElements = notesGrid.querySelectorAll(".note-card");
   childElements.forEach((child) => {
     child.classList.remove("selected");
   });
 }
 
+//     _____ _______    _______ ______  
+//    / ____|__   __|/\|__   __|  ____| 
+//   | (___    | |  /  \  | |  | |__    
+//    \___ \   | | / /\ \ | |  |  __|   
+//    ____) |  | |/ ____ \| |  | |____  
+//   |_____/   |_/_/    \_\_|  |______| 
+//                                      
+//                                      
+
 document.addEventListener("multiselectionStateChange", (event) => {
   if (event.detail === true) {
     dropdown.classList.add("selected");
     addNoteBtn.classList.remove("active");
-    delNoteBtn.classList.add("active");
+    delNotesBtn.classList.add("active");
   } else {
     dropdown.classList.remove("selected");
     addNoteBtn.classList.add("active");
-    delNoteBtn.classList.remove("active");
+    delNotesBtn.classList.remove("active");
+    currentNoteIdMultiselection = []
   }
 });
 
@@ -390,26 +444,26 @@ const createNoteCard = (note) => {
   });
   }
 
-
- 
-
-
   noteCard.appendChild(title);
   noteCard.appendChild(content);
 
   notesGrid.appendChild(noteCard);
+
+  return noteCard
 };
 
 const resetNotesGrid = () => {
   notesGrid.innerHTML = "";
 };
 
-function renderNotesLibrary() {
+function renderAllNotesLibrary() {
   resetNotesGrid();
   notesLibrary.notes.forEach((note) => {
     createNoteCard(note);
   });
 }
+
+
 
 //    _____        _____ ______     _      ____          _____
 //   |  __ \ /\   / ____|  ____|   | |    / __ \   /\   |  __ \
@@ -420,11 +474,22 @@ function renderNotesLibrary() {
 //
 //
 
+const JSONToNote = (note) => {
+  return new Note(
+    note.id,
+    note.title,
+    note.content,
+    note.dateOfCreation,
+    note.dateOfModification
+  );
+};
+
+
 window.addEventListener("load", () => {
   const savedNotesLibrary = JSON.parse(localStorage.getItem("library"));
   if (savedNotesLibrary) {
     notesLibrary.notes = savedNotesLibrary.map((note) => JSONToNote(note));
-    renderNotesLibrary();
+    renderAllNotesLibrary();
     console.log(notesLibrary);
   } else {
     notesLibrary.notes = [];
@@ -444,7 +509,7 @@ document.addEventListener("click", function (event) {
   var clickedElement = event.target;
   // Check if the clicked element or any of its ancestors have the "card" class
   var isClickedOnCard = clickedElement.closest(".note-card");
-  var isClickedOnModalInput = clickedElement.closest(".note-form");
+  var isClickedOnModalInput = clickedElement.closest(".modal");
   var clickedOnButtons = clickedElement.closest(".btn");
   console.log(isClickedOnCard);
   // If not clicked on a card or its descendant
