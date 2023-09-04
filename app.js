@@ -1,12 +1,14 @@
 "use strict";
+document.cookie = "myCookie=myValue; SameSite=None; Secure";
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
 import {
   GoogleAuthProvider,
   getAuth,
   signInWithPopup,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
-import {} from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
+import {getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -541,29 +543,118 @@ window.addEventListener("contextmenu", (e) => {
 //   |_|    |_____|_|  \_\______|____/_/    \_\_____/|______|
 //
 //
-const app = initializeApp(firebaseConfig);
+const app = await initializeApp(firebaseConfig);
 const provider = new GoogleAuthProvider();
-const auth = getAuth();
+const auth = await getAuth();
+const db = await getFirestore(app);
 
-const signIn = () =>
-  signInWithPopup(auth, provider)
-    .then((result) => {
-      // This gives you a Google Access Token. You can use it to access the Google API.
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential.accessToken;
-      // The signed-in user info.
-      const user = result.user;
-      // IdP data available using getAdditionalUserInfo(result)
-      // ...
+//auth
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // User is signed in, see docs for a list of available properties
+    // https://firebase.google.com/docs/reference/js/auth.user
+
+    const uid = user.uid;
+    // ...
+  } else {
+    // User is signed out
+    // ...
+
+  }
+});
+
+const onclkSignIn = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const token = credential.accessToken;
+    const user = result.user;
+
+    // Now, let's check if the user document exists in Firestore
+    const userDocRef = doc(db, "users", user.uid);
+    const userDocSnapshot = await getDoc(userDocRef);
+
+    // If the user document doesn't exist, create it
+    if (!userDocSnapshot.exists()) {
+      await setDoc(userDocRef, {
+        // You can include additional user data here if needed
+        displayName: user.displayName,
+        email: user.email,
+        uid: user.uid,
+      });
+    }
+    // Continue with any other logic you need after a successful login
+  } catch (error) {
+    // Handle authentication errors here
+    console.error("Authentication error:", error);
+  }
+};
+
+logInBtn.onclick = onclkSignIn;
+
+
+const onclkSignOut = async () => 
+signOut(auth).then(() => {
+  console.log("youreout")
+}).catch((error) => {
+  // An error happened.
+});
+logOutBtn.onclick = onclkSignOut
+
+//firestore
+
+
+let unsubscribe
+
+const setupRealTimeListener = () => {
+  unsubscribe = db
+    .collection('notes')
+    .where('ownerId', '==', auth.currentUser.uid)
+    .orderBy('DoC')
+    .onSnapshot((snapshot) => {
+      notesLibrary.notes = docsToNotes(snapshot.docs)
+      renderAllNotesLibrary()
     })
-    .catch((error) => {
-      // Handle Errors here.
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      // The email of the user's account used.
-      const email = error.customData.email;
-      // The AuthCredential type that was used.
-      const credential = GoogleAuthProvider.credentialFromError(error);
-      // ...
-    });
-logInBtn.onclick = signIn;
+}
+
+
+const addNoteDB = (newNote) => {
+  db.collection('notes').add(bookToDoc(newNote))
+}
+
+const updateNoteDB = (...args) => {
+
+}
+
+const removeNoteDB = async (id) => {
+  db.collection('notes')
+    .where('ownerId', '==' , auth.currentUser.uid)
+    .where('id', '==', id)
+    .delete()
+}
+
+
+const docsToNotes = (docs) => {
+  return docs.map((doc) => {
+    return {
+      id: doc.data().id,
+      title: doc.data().title,
+      content: doc.data().content, // Add more fields as needed
+      dateOfCreation: doc.data().DoC, // Convert Firestore timestamp to JavaScript Date
+      dateOfModification: doc.data().DoM, // Convert Firestore timestamp to JavaScript Date
+    };
+  });
+};
+
+
+const noteToDoc = (note) => {
+  return {
+    ownerId: auth.currentUser.uid,
+    id: note.id,
+    title: note.title,
+    content: note.content,
+    dateOfCreation: Timestamp.fromDate(note.DoC),
+    dateOfModification: Timestamp.fromDate(note.DoC),
+  }
+}
