@@ -1,16 +1,28 @@
-"use strict";
-document.cookie = "myCookie=myValue; SameSite=None; Secure";
-// Import the functions you need from the SDKs you need
+//"use strict";
+//document.cookie = "myCookie=myValue; SameSite=None; Secure";
+//Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
 import {
   GoogleAuthProvider,
   getAuth,
   signInWithPopup,
-  signOut
+  signOut,
+  onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
-import {getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  doc,
+  onSnapshot,
+  //getDoc,
+  //getDocs,
+  setDoc,
+  Timestamp,
+} from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
+//TODO: Add SDKs for Firebase products that you want to use
+//https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -112,6 +124,8 @@ var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
 
 let currentNoteId = 0;
 let currentNoteIdMultiselection = [];
+let touchScreen = false;
+
 
 const notesLibrary = new NotesLibrary();
 
@@ -179,7 +193,12 @@ const addNote = () => {
   const addedNoteCard = createNoteCard(currentNote);
 
   openNoteModalForm(currentNoteId);
-  saveToLocalStorage(currentNoteId);
+
+  if (auth.currentUser) {
+    addNoteDB(currentNote, currentNoteId);
+  } else {
+    saveToLocalStorage(currentNoteId);
+  }
 
   addedNoteCard.style.transform = "scale(0)";
   addedNoteCard.style.opacity = "0";
@@ -203,20 +222,37 @@ const delNote = (id) => {
   cardToRemove.addEventListener("transitionend", removeCard);
 
   notesLibrary.removeNote(id);
-  saveLocal();
+  if (auth.currentUser) {
+    removeNoteDB(id);
+  } else {
+    saveLocal();
+  }
   closeAllModals();
 };
 delFormBtn.onclick = () => delNote(currentNoteId);
 
-const delMutlipleNotes = () => {
+const delMutlipleNotes = async () => {
   currentNoteIdMultiselection.forEach((id) => {
-    delNote(id);
+    if (auth.currentUser) {
+      removeNoteDB(id);
+    } else {
+      delNote(id);
+    }
   });
 };
 delNotesBtn.onclick = delMutlipleNotes;
 
+window.addEventListener('touchstart', function() {
+  touchScreen = true
+});
+
+window.addEventListener('mousedown', function() {
+  touchScreen = false
+});
+
 //    _      ____   _____          _           _____ _______ ____  _____            _____ ______
 //   | |    / __ \ / ____|   /\   | |         / ____|__   __/ __ \|  __ \     /\   / ____|  ____|
+
 //   | |   | |  | | |       /  \  | |        | (___    | | | |  | | |__) |   /  \ | |  __| |__
 //   | |   | |  | | |      / /\ \ | |         \___ \   | | | |  | |  _  /   / /\ \| | |_ |  __|
 //   | |___| |__| | |____ / ____ \| |____     ____) |  | | | |__| | | \ \  / ____ \ |__| | |____
@@ -307,19 +343,25 @@ function saveToLocalStorage(id) {
   saveLocal();
 }
 
+
 // Debounced version of the saveToLocalStorage function
 const debouncedSaveToLocalStorage = debounce(
-  (id) => saveToLocalStorage(id),
-  500
+  (id) => saveToLocalStorage(id), 1000
 );
 
+const updateOnEvtListener = () => {
+  const title = titleInput.value;
+  const content = contentInput.value;
+  if (auth.currentUser) {
+    updateNoteDB(currentNoteId, title, content);
+  } else {
+    debouncedSaveToLocalStorage(currentNoteId);
+  }
+};
+
 // Add event listeners to input fields
-titleInput.addEventListener("input", () =>
-  debouncedSaveToLocalStorage(currentNoteId)
-);
-contentInput.addEventListener("input", () =>
-  debouncedSaveToLocalStorage(currentNoteId)
-);
+titleInput.addEventListener("input", updateOnEvtListener);
+contentInput.addEventListener("input", updateOnEvtListener);
 
 function removeSelectedClassNoteCard() {
   currentNoteId = null;
@@ -497,7 +539,7 @@ const JSONToNote = (note) => {
   );
 };
 
-window.addEventListener("load", () => {
+const restoreLocal = () => {
   const savedNotesLibrary = JSON.parse(localStorage.getItem("library"));
   if (savedNotesLibrary) {
     notesLibrary.notes = savedNotesLibrary.map((note) => JSONToNote(note));
@@ -506,7 +548,8 @@ window.addEventListener("load", () => {
   } else {
     notesLibrary.notes = [];
   }
-});
+};
+
 
 //    _____  ______  _____ ______ _      ______ _____ _______     ________      _________ _      _____  _____ _______
 //   |  __ \|  ____|/ ____|  ____| |    |  ____/ ____|__   __|   |  ____\ \    / /__   __| |    |_   _|/ ____|__   __|
@@ -535,6 +578,7 @@ window.addEventListener("contextmenu", (e) => {
   e.preventDefault();
 });
 
+
 //    ______ _____ _____  ______ ____           _____ ______
 //   |  ____|_   _|  __ \|  ____|  _ \   /\    / ____|  ____|
 //   | |__    | | | |__) | |__  | |_) | /  \  | (___ | |__
@@ -550,41 +594,34 @@ const db = await getFirestore(app);
 
 //auth
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, (user) => {
   if (user) {
     // User is signed in, see docs for a list of available properties
     // https://firebase.google.com/docs/reference/js/auth.user
+    console.log(auth.currentUser);
 
-    const uid = user.uid;
-    // ...
+    setupRealTimeListener()
+
   } else {
-    // User is signed out
-    // ...
-
+    if (unsub) unsubscribe(); //If listener is still active call function 
+    restoreLocal();
+    renderAllNotesLibrary();
   }
 });
 
 const onclkSignIn = async () => {
+
+
+
   try {
-    const result = await signInWithPopup(auth, provider);
+    const result = touchScreen === true ? await signInWithRedirect(auth, provider) : await signInWithPopup(auth, provider);
+  
     const credential = GoogleAuthProvider.credentialFromResult(result);
-    const token = credential.accessToken;
-    const user = result.user;
+    console.log(credential);
 
-    // Now, let's check if the user document exists in Firestore
-    const userDocRef = doc(db, "users", user.uid);
-    const userDocSnapshot = await getDoc(userDocRef);
-
-    // If the user document doesn't exist, create it
-    if (!userDocSnapshot.exists()) {
-      await setDoc(userDocRef, {
-        // You can include additional user data here if needed
-        displayName: user.displayName,
-        email: user.email,
-        uid: user.uid,
-      });
-    }
-    // Continue with any other logic you need after a successful login
+    currentNoteId = null
+    notesLibrary.notes = []
+    renderAllNotesLibrary();
   } catch (error) {
     // Handle authentication errors here
     console.error("Authentication error:", error);
@@ -593,60 +630,87 @@ const onclkSignIn = async () => {
 
 logInBtn.onclick = onclkSignIn;
 
-
-const onclkSignOut = async () => 
-signOut(auth).then(() => {
-  console.log("youreout")
-}).catch((error) => {
-  // An error happened.
-});
-logOutBtn.onclick = onclkSignOut
+const onclkSignOut = async () =>
+  signOut(auth)
+    .then(() => {
+      console.log("youreout");
+    })
+    .catch((error) => {
+      // An error happened.
+    });
+logOutBtn.onclick = onclkSignOut;
 
 //firestore
 
+let unsub
 
-let unsubscribe
+const setupRealTimeListener = async () => {
+try {
+  const q = query(collection(db, "notes"), where("ownerId", "==", auth.currentUser.uid));
+  //const docsSnap = await getDocs(q);
 
-const setupRealTimeListener = () => {
-  unsubscribe = db
-    .collection('notes')
-    .where('ownerId', '==', auth.currentUser.uid)
-    .orderBy('DoC')
-    .onSnapshot((snapshot) => {
-      notesLibrary.notes = docsToNotes(snapshot.docs)
-      renderAllNotesLibrary()
-    })
+  unsub = await onSnapshot(q, (querySnapshot) => {
+    querySnapshot.forEach((doc) => {
+      notesLibrary.addNote(docsToNotes(doc));
+      console.log(doc)
+    });
+    console.log('aaa')
+    renderAllNotesLibrary()
+  })
+
+  
+}catch(err){
+  console.log(err)
 }
-
-
-const addNoteDB = (newNote) => {
-  db.collection('notes').add(bookToDoc(newNote))
-}
-
-const updateNoteDB = (...args) => {
-
-}
-
-const removeNoteDB = async (id) => {
-  db.collection('notes')
-    .where('ownerId', '==' , auth.currentUser.uid)
-    .where('id', '==', id)
-    .delete()
-}
-
-
-const docsToNotes = (docs) => {
-  return docs.map((doc) => {
-    return {
-      id: doc.data().id,
-      title: doc.data().title,
-      content: doc.data().content, // Add more fields as needed
-      dateOfCreation: doc.data().DoC, // Convert Firestore timestamp to JavaScript Date
-      dateOfModification: doc.data().DoM, // Convert Firestore timestamp to JavaScript Date
-    };
-  });
 };
 
+const addNoteDB = async (newNote, id) => {
+  //doc(db, 'notes').add(noteToDoc(newNote))
+  await setDoc(doc(db, "notes", String(id)), noteToDoc(newNote));
+};
+
+// const updateNoteDB = async (...args) => {
+//   const noteRef = db
+//     .collection("notes")
+//     .where("ownerId", "==", auth.currentUser.uid)
+//     .where("id", "==", id);
+
+//   const snapshot = await noteRef.getDoc();
+
+//   if (snapshot.empty) {
+//     console.log("No matching documents.");
+//     return;
+//   }
+
+//   const updatedData = {
+//     title: newTitle,
+//     content: newContent,
+//     dateOfModification: Timestamp.now(),
+//   };
+
+//   await snapshot.ref
+//     .update(updatedData)
+//     .then(() => console.log("updated"))
+//     .catch((err) => console.log(err));
+// };
+
+// const removeNoteDB = async (id) => {
+//   db.collection("notes")
+//     .where("ownerId", "==", auth.currentUser.uid)
+//     .where("id", "==", id)
+//     .delete();
+// };
+
+const docsToNotes = (doc) => {
+  console.log(doc.id, doc.title, doc.content, doc.data().DoC.toDate(), doc.data().DoM.toDate())
+  const currentNote = new Note();
+  currentNote.id = doc.id
+  currentNote.title = doc.title
+  currentNote.content = doc.content
+  currentNote.dateOfCreation = doc.data().DoC.toDate()
+  currentNote.dateOfModification = doc.data().DoM.toDate()
+  return currentNote
+}
 
 const noteToDoc = (note) => {
   return {
@@ -654,7 +718,7 @@ const noteToDoc = (note) => {
     id: note.id,
     title: note.title,
     content: note.content,
-    dateOfCreation: Timestamp.fromDate(note.DoC),
-    dateOfModification: Timestamp.fromDate(note.DoC),
-  }
-}
+    DoC: Timestamp.fromDate(note.dateOfCreation),
+    DoM: Timestamp.fromDate(note.dateOfModification),
+  };
+};
