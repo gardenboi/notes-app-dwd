@@ -1,0 +1,1 @@
+This is one of my first vanilla javascript projects, I got inspiration from [The Onin Project](https://www.theodinproject.com/lessons/node-path-javascript-library) so I wanted to make my own thing and explore a bit the possibilites of vanilla js to understand its pros and cons 
